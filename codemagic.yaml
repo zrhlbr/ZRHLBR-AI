@@ -39,6 +39,8 @@ workflows:
 
     publishing:
       email:
+        recipients:
+          - zhaoronghua180@gmail.com
         notify:
           success: true
           failure: true
