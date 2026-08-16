@@ -35,9 +35,10 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Package unsigned device app
+      - name: Package unsigned IPA
         script: |
-          APP_PATH="$(find ios/App/build-device/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
+          APP_PATH="$(find ios/App/build-device/Build/Products/Release-iphoneos \
+            -maxdepth 1 -name '*.app' -type d | head -1)"
 
           if [ -z "$APP_PATH" ]; then
             echo "DEVICE_APP_NOT_FOUND"
@@ -46,13 +47,26 @@ workflows:
 
           echo "DEVICE_APP=$APP_PATH"
 
-          cd "$(dirname "$APP_PATH")"
-          zip -r /tmp/ZRHLBR-AI-iPhone-unsigned.app.zip "$(basename "$APP_PATH")"
+          rm -rf /tmp/zrhlbr-ipa
+          mkdir -p /tmp/zrhlbr-ipa/Payload
 
-          ls -lh /tmp/ZRHLBR-AI-iPhone-unsigned.app.zip
+          cp -R "$APP_PATH" /tmp/zrhlbr-ipa/Payload/
+
+          cd /tmp/zrhlbr-ipa
+          zip -qry /tmp/ZRHLBR-AI-unsigned.ipa Payload
+
+          test -f /tmp/ZRHLBR-AI-unsigned.ipa
+
+          echo "===== IPA ====="
+          ls -lh /tmp/ZRHLBR-AI-unsigned.ipa
+
+          echo "===== IPA CONTENT CHECK ====="
+          unzip -l /tmp/ZRHLBR-AI-unsigned.ipa | head -40
+
+          echo "UNSIGNED_IPA=PASS"
 
     artifacts:
-      - /tmp/ZRHLBR-AI-iPhone-unsigned.app.zip
+      - /tmp/ZRHLBR-AI-unsigned.ipa
       - ios/App/build-device/Build/Products/Release-iphoneos/**/*.app
       - /tmp/xcodebuild_logs/*.log
 
