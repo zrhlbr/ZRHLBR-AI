@@ -1,6 +1,6 @@
 workflows:
-  zrhlbr-ai-ios:
-    name: ZRHLBR AI iOS
+  zrhlbr-ai-ios-device:
+    name: ZRHLBR AI iOS Device
     instance_type: mac_mini_m2
     max_build_duration: 30
 
@@ -21,20 +21,39 @@ workflows:
             echo "NO_PODFILE_USING_SPM"
           fi
 
-      - name: Build iOS application
+      - name: Build iOS device application
         script: |
           cd ios/App
+
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -derivedDataPath build \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build-device \
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Package unsigned device app
+        script: |
+          APP_PATH="$(find ios/App/build-device/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
+
+          if [ -z "$APP_PATH" ]; then
+            echo "DEVICE_APP_NOT_FOUND"
+            exit 30
+          fi
+
+          echo "DEVICE_APP=$APP_PATH"
+
+          cd "$(dirname "$APP_PATH")"
+          zip -r /tmp/ZRHLBR-AI-iPhone-unsigned.app.zip "$(basename "$APP_PATH")"
+
+          ls -lh /tmp/ZRHLBR-AI-iPhone-unsigned.app.zip
+
     artifacts:
-      - ios/App/build/Build/Products/**/*.app
+      - /tmp/ZRHLBR-AI-iPhone-unsigned.app.zip
+      - ios/App/build-device/Build/Products/Release-iphoneos/**/*.app
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
